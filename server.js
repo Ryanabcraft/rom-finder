@@ -31,6 +31,7 @@ loadData();
 
 // Device Name Normalization
 function normalize(str) {
+    if (!str || typeof str !== 'string') return "";
     return str.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
@@ -46,12 +47,13 @@ async function fetchExternalRoms(deviceQuery) {
         
         // Search for device in PE database with more flexibility
         const q = normalize(deviceQuery);
-        const foundDevice = peDevices.find(d => 
-            normalize(d.model).includes(q) || 
-            normalize(d.codename).includes(q) ||
-            normalize(d.name).includes(q) ||
-            q.includes(normalize(d.codename))
-        );
+        const foundDevice = peDevices.find(d => {
+            if (!d) return false;
+            return normalize(d.model).includes(q) || 
+                   normalize(d.codename).includes(q) ||
+                   normalize(d.name).includes(q) ||
+                   (d.codename && q.includes(normalize(d.codename)));
+        });
 
         if (foundDevice) {
             externalRoms.push({
@@ -76,7 +78,8 @@ async function fetchExternalRoms(deviceQuery) {
         
         for (const codename in loDevices) {
             const dev = loDevices[codename];
-            if (normalize(codename) === q || normalize(dev.name).includes(q) || q.includes(normalize(codename))) {
+            if (!dev) continue;
+            if (normalize(codename) === q || (dev.name && normalize(dev.name).includes(q)) || q.includes(normalize(codename))) {
                 foundCodename = codename;
                 break;
             }
