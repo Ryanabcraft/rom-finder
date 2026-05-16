@@ -14,8 +14,6 @@ import {
   Monitor,
   Cloud,
   ArrowUpRight,
-  Github,
-  Twitter,
   Menu,
   X
 } from 'lucide-react';
@@ -240,8 +238,8 @@ function App() {
         <div className="footer-content glass-panel">
           <div className="footer-brand neon-text">AETHER CORE v1.0.4</div>
           <div className="social-links">
-            <Github size={20} />
-            <Twitter size={20} />
+            <Globe size={20} />
+            <Globe size={20} />
           </div>
           <p>© 2026 Integrated Systems Inc.</p>
         </div>
