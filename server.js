@@ -41,27 +41,58 @@ async function fetchExternalRoms(deviceQuery) {
 
     try {
         // Pixel Experience API integration (Automatic source 1)
-        const peResponse = await axios.get('https://download.pixelexperience.org/api/v1/devices');
+        const peResponse = await axios.get('https://api.pixelexperience.org/v1/devices');
         const peDevices = peResponse.data;
         
-        // Search for device in PE database
+        // Search for device in PE database with more flexibility
+        const q = normalize(deviceQuery);
         const foundDevice = peDevices.find(d => 
-            normalize(d.model).includes(normalize(deviceQuery)) || 
-            normalize(d.codename).includes(normalize(deviceQuery)) ||
-            normalize(d.name).includes(normalize(deviceQuery))
+            normalize(d.model).includes(q) || 
+            normalize(d.codename).includes(q) ||
+            normalize(d.name).includes(q) ||
+            q.includes(normalize(d.codename))
         );
 
         if (foundDevice) {
             externalRoms.push({
                 name: "Pixel Experience",
-                android: "14", // PE is usually on latest
+                android: "14",
                 status: "Stable",
-                download: `https://download.pixelexperience.org/${foundDevice.codename}`,
+                download: `https://get.pixelexperience.org/${foundDevice.codename}`,
                 install_guide: `https://wiki.pixelexperience.org/devices/${foundDevice.codename}/install`
             });
         }
     } catch (e) {
         console.log("Pixel Experience API check failed:", e.message);
+    }
+
+    try {
+        // LineageOS API integration (Automatic source 2)
+        const loResponse = await axios.get('https://download.lineageos.org/api/v1/devices');
+        const loDevices = loResponse.data; // This is an object with codenames as keys
+        
+        const q = normalize(deviceQuery);
+        let foundCodename = null;
+        
+        for (const codename in loDevices) {
+            const dev = loDevices[codename];
+            if (normalize(codename) === q || normalize(dev.name).includes(q) || q.includes(normalize(codename))) {
+                foundCodename = codename;
+                break;
+            }
+        }
+
+        if (foundCodename) {
+            externalRoms.push({
+                name: "LineageOS",
+                android: "21 (Android 14)",
+                status: "Official",
+                download: `https://download.lineageos.org/devices/${foundCodename}`,
+                install_guide: `https://wiki.lineageos.org/devices/${foundCodename}/install`
+            });
+        }
+    } catch (e) {
+        console.log("LineageOS API check failed:", e.message);
     }
 
     try {
