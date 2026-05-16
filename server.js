@@ -39,60 +39,75 @@ function normalize(str) {
 async function fetchExternalRoms(deviceQuery) {
     console.log(`Searching external sources for: ${deviceQuery}`);
     const externalRoms = [];
+    const q = normalize(deviceQuery);
 
     try {
-        // Pixel Experience API integration (Automatic source 1)
+        // Pixel Experience API integration
         const peResponse = await axios.get('https://api.pixelexperience.org/v1/devices');
         const peDevices = peResponse.data;
         
-        // Search for device in PE database with more flexibility
-        const q = normalize(deviceQuery);
-        const foundDevice = peDevices.find(d => {
+        // Match exato por codename ou match muito próximo no nome
+        const foundDevices = peDevices.filter(d => {
             if (!d) return false;
-            return normalize(d.model).includes(q) || 
-                   normalize(d.codename).includes(q) ||
-                   normalize(d.name).includes(q) ||
-                   (d.codename && q.includes(normalize(d.codename)));
+            const dCodename = normalize(d.codename);
+            const dName = normalize(d.name);
+            
+            if (dCodename === q) return true;
+            
+            // Se a query contiver o codename (ex: "Motorola Devon")
+            if (q.includes(dCodename) && dCodename.length > 3) return true;
+
+            // Se o nome for muito parecido (Moto G32 vs Motorola G32)
+            const qFixed = q.replace('motorola', 'moto');
+            const dNameFixed = dName.replace('motorola', 'moto');
+            if (qFixed === dNameFixed || qFixed.includes(dNameFixed) || dNameFixed.includes(qFixed)) {
+                // Garantir que não pegue "Moto G" ao buscar "Moto G32"
+                if (Math.abs(qFixed.length - dNameFixed.length) < 5) return true;
+            }
+
+            return false;
         });
 
-        if (foundDevice) {
+        // Limitar a 3 dispositivos para não poluir
+        foundDevices.slice(0, 3).forEach(foundDevice => {
             externalRoms.push({
-                name: "Pixel Experience",
+                name: `Pixel Experience (${foundDevice.name})`,
                 android: "14",
                 status: "Stable",
                 download: `https://get.pixelexperience.org/${foundDevice.codename}`,
                 install_guide: `https://wiki.pixelexperience.org/devices/${foundDevice.codename}/install`
             });
-        }
+        });
     } catch (e) {
         console.log("Pixel Experience API check failed:", e.message);
     }
 
     try {
-        // LineageOS API integration (Automatic source 2)
+        // LineageOS API integration
         const loResponse = await axios.get('https://download.lineageos.org/api/v1/devices');
-        const loDevices = loResponse.data; // This is an object with codenames as keys
-        
-        const q = normalize(deviceQuery);
-        let foundCodename = null;
+        const loDevices = loResponse.data;
         
         for (const codename in loDevices) {
             const dev = loDevices[codename];
-            if (!dev) continue;
-            if (normalize(codename) === q || (dev.name && normalize(dev.name).includes(q)) || q.includes(normalize(codename))) {
-                foundCodename = codename;
-                break;
-            }
-        }
+            const dCodename = normalize(codename);
+            const dName = normalize(dev.name);
+            
+            let match = false;
+            if (dCodename === q) match = true;
+            
+            const qFixed = q.replace('motorola', 'moto');
+            const dNameFixed = dName.replace('motorola', 'moto');
+            if (qFixed === dNameFixed || (qFixed.includes(dNameFixed) && Math.abs(qFixed.length - dNameFixed.length) < 5)) match = true;
 
-        if (foundCodename) {
-            externalRoms.push({
-                name: "LineageOS",
-                android: "21 (Android 14)",
-                status: "Official",
-                download: `https://download.lineageos.org/devices/${foundCodename}`,
-                install_guide: `https://wiki.lineageos.org/devices/${foundCodename}/install`
-            });
+            if (match) {
+                externalRoms.push({
+                    name: `LineageOS (${dev.name})`,
+                    android: "21 (Android 14)",
+                    status: "Official",
+                    download: `https://download.lineageos.org/devices/${codename}`,
+                    install_guide: `https://wiki.lineageos.org/devices/${codename}/install`
+                });
+            }
         }
     } catch (e) {
         console.log("LineageOS API check failed:", e.message);
