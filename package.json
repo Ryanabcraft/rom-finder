@@ -1,0 +1,24 @@
+{
+  "name": "site-custom-rom",
+  "version": "1.0.0",
+  "description": "O **ROM Finder** é uma ferramenta completa para usuários de Android que desejam encontrar Custom ROMs de forma rápida e automática.",
+  "main": "server.js",
+  "scripts": {
+    "frontend-install": "cd frontend && npm install",
+    "frontend-build": "cd frontend && npm run build",
+    "build": "npm run frontend-install && npm run frontend-build",
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.16.1",
+    "cheerio": "^1.2.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "node-fetch": "^3.3.2"
+  }
+}
